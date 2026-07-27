@@ -1,0 +1,12 @@
+node_modules/
+cdk.out/
+
+.env
+.env.*
+!.env.example
+
+cdk.context.json
+*.tsbuildinfo
+
+.DS_Store
+Thumbs.db
