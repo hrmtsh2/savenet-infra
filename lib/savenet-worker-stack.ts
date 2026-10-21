@@ -6,12 +6,30 @@ import * as lambdaEvents from "aws-cdk-lib/aws-lambda-event-sources"
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs"
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager"
 import * as sqs from "aws-cdk-lib/aws-sqs"
+import * as s3 from "aws-cdk-lib/aws-s3"
+import * as iam from "aws-cdk-lib/aws-iam"
 import { Construct } from "constructs"
 import * as path from "path"
 
 export class SaveNetWorkerStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props)
+    const thumbnailBucket = new s3.Bucket(this, "ThumbnailBucket", {
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      enforceSSL: true,
+      lifecycleRules: [{ expiration: cdk.Duration.days(3650) }],
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      autoDeleteObjects: false,
+    })
+    const webRuntimeRoleArn = process.env.WEB_RUNTIME_ROLE_ARN
+    if (webRuntimeRoleArn) {
+      thumbnailBucket.addToResourcePolicy(new iam.PolicyStatement({
+        principals: [new iam.ArnPrincipal(webRuntimeRoleArn)],
+        actions: ["s3:GetObject", "s3:PutObject"],
+        resources: [thumbnailBucket.arnForObjects("*")],
+      }))
+    }
     const deadLetterQueue = new sqs.Queue(this, "AgentDeadLetterQueue", { retentionPeriod: cdk.Duration.days(14) })
     const jobs = new sqs.Queue(this, "AgentJobs", {
       visibilityTimeout: cdk.Duration.minutes(6),
@@ -43,5 +61,6 @@ export class SaveNetWorkerStack extends cdk.Stack {
     })
     new cdk.CfnOutput(this, "AgentJobsQueueUrl", { value: jobs.queueUrl })
     new cdk.CfnOutput(this, "WorkerAuthSecretArn", { value: workerAuthSecret.secretArn })
+    new cdk.CfnOutput(this, "ThumbnailBucketName", { value: thumbnailBucket.bucketName })
   }
 }
