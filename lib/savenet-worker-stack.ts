@@ -26,7 +26,7 @@ export class SaveNetWorkerStack extends cdk.Stack {
     if (webRuntimeRoleArn) {
       thumbnailBucket.addToResourcePolicy(new iam.PolicyStatement({
         principals: [new iam.ArnPrincipal(webRuntimeRoleArn)],
-        actions: ["s3:GetObject", "s3:PutObject"],
+        actions: ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
         resources: [thumbnailBucket.arnForObjects("*")],
       }))
     }

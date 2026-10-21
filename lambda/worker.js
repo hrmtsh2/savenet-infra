@@ -32,5 +32,6 @@ exports.handler = async (event) => {
     }
     await trigger("/api/internal/agent-worker")
     await trigger("/api/internal/digest-worker")
+    await trigger("/api/internal/deleted-post-worker")
   }
 }
