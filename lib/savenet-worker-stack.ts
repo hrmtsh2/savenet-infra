@@ -22,14 +22,13 @@ export class SaveNetWorkerStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
       autoDeleteObjects: false,
     })
-    const webRuntimeRoleArn = process.env.WEB_RUNTIME_ROLE_ARN
-    if (webRuntimeRoleArn) {
-      thumbnailBucket.addToResourcePolicy(new iam.PolicyStatement({
-        principals: [new iam.ArnPrincipal(webRuntimeRoleArn)],
-        actions: ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
-        resources: [thumbnailBucket.arnForObjects("*")],
-      }))
-    }
+    const webRuntimeRoleArn = process.env.AWS_RUNTIME_ROLE_ARN
+    if (!webRuntimeRoleArn) throw new Error("AWS_RUNTIME_ROLE_ARN is required to grant thumbnail bucket access")
+    thumbnailBucket.addToResourcePolicy(new iam.PolicyStatement({
+      principals: [new iam.ArnPrincipal(webRuntimeRoleArn)],
+      actions: ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      resources: [thumbnailBucket.arnForObjects("*")],
+    }))
     const deadLetterQueue = new sqs.Queue(this, "AgentDeadLetterQueue", { retentionPeriod: cdk.Duration.days(14) })
     const jobs = new sqs.Queue(this, "AgentJobs", {
       visibilityTimeout: cdk.Duration.minutes(6),
